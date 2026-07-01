@@ -1,25 +1,25 @@
 # Task Manager API
 
-Rails API application for a medical staff task tracker.
+Rails API-приложение для трекера рабочих задач медицинского персонала.
 
-The source requirements are captured in [SPECS.md](SPECS.md). The LLM session history is captured in [HISTORY.md](HISTORY.md).
+Исходные требования сохранены в [SPECS.md](SPECS.md). История работы с LLM сохранена в [HISTORY.md](HISTORY.md).
 
-## Stack
+## Стек
 
 - Ruby 3.4.3
-- Rails 8.0.5 API mode
+- Rails 8.0.5 в API mode
 - PostgreSQL 16+
 - Docker / Docker Compose
 
-## Local Setup
+## Локальный запуск
 
-Install dependencies:
+Установите зависимости:
 
 ```bash
 BUNDLE_PATH=vendor/bundle bundle install
 ```
 
-Run PostgreSQL 16 in Docker:
+Запустите PostgreSQL 16 в Docker:
 
 ```bash
 docker run -d --name task_manager_db \
@@ -30,7 +30,7 @@ docker run -d --name task_manager_db \
   postgres:16
 ```
 
-Prepare the database:
+Подготовьте базу данных:
 
 ```bash
 DATABASE_HOST=localhost \
@@ -39,7 +39,7 @@ DATABASE_PASSWORD=task_manager_password \
 bin/rails db:prepare
 ```
 
-Load required protected tags:
+Загрузите обязательные защищенные теги:
 
 ```bash
 DATABASE_HOST=localhost \
@@ -48,7 +48,7 @@ DATABASE_PASSWORD=task_manager_password \
 bin/rails db:seed
 ```
 
-Run the API:
+Запустите API:
 
 ```bash
 DATABASE_HOST=localhost \
@@ -58,7 +58,7 @@ BUNDLE_PATH=vendor/bundle \
 bin/rails server
 ```
 
-Run tests:
+Запустите тесты:
 
 ```bash
 DATABASE_HOST=localhost \
@@ -68,70 +68,71 @@ BUNDLE_PATH=vendor/bundle \
 bundle exec rspec
 ```
 
-## Docker Setup
+## Запуск через Docker
 
-For review startup with Rails and PostgreSQL together:
+Для быстрого проверочного запуска Rails и PostgreSQL вместе:
 
 ```bash
 docker compose up --build
 ```
 
-If your Docker installation uses the legacy Compose binary, run
-`docker-compose up --build` instead.
+Если у вас установлен старый бинарный файл Compose, используйте
+`docker-compose up --build`.
 
-The API will be available at `http://localhost:3000`.
+API будет доступно по адресу `http://localhost:3000`.
 
-Swagger UI will be available at `http://localhost:3000/api-docs`.
+Swagger UI будет доступен по адресу `http://localhost:3000/api-docs`.
 
-The generated `Dockerfile` is production-oriented. The compose file uses the
-official Ruby image for a development-style review run.
+Сгенерированный `Dockerfile` ориентирован на production-сборку. `docker-compose.yml`
+использует официальный Ruby image для проверочного запуска в development-режиме.
 
-## API Examples
+## Примеры API
 
-Create a one-time task:
-
-```bash
-curl -X POST http://localhost:3000/api/v1/tasks \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Call patient","description":"Check condition","due_date":"2026-07-01"}'
-```
-
-Create a daily recurring task:
+Создать одноразовую задачу:
 
 ```bash
 curl -X POST http://localhost:3000/api/v1/tasks \
   -H "Content-Type: application/json" \
-  -d '{"title":"Daily round","due_date":"2026-07-01","recurrence":{"type":"daily","interval":1,"end_date":"2026-07-07"}}'
+  -d '{"title":"Позвонить пациенту","description":"Уточнить самочувствие","due_date":"2026-07-01"}'
 ```
 
-List a bounded window:
+Создать ежедневную повторяющуюся задачу:
+
+```bash
+curl -X POST http://localhost:3000/api/v1/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Ежедневный обход","due_date":"2026-07-01","recurrence":{"type":"daily","interval":1,"end_date":"2026-07-07"}}'
+```
+
+Получить список задач за ограниченное временное окно:
 
 ```bash
 curl "http://localhost:3000/api/v1/tasks?from=2026-07-01&to=2026-07-07"
 ```
 
-## Project Notes
+## Заметки по проекту
 
-This project was initialized as a Rails API with PostgreSQL and no Git repository initialization.
+Проект был инициализирован как Rails API с PostgreSQL. Git-репозиторий был
+добавлен позднее локально, без remote.
 
-Spec Kit workflow artifacts are stored in [specs/001-task-tracker-api](specs/001-task-tracker-api).
+Артефакты workflow Spec Kit находятся в [specs/001-task-tracker-api](specs/001-task-tracker-api).
 
-The application follows the reference `api-service` structure for request
-handling: controller -> form -> dry-validation contract -> domain service ->
-serializer. Shared call helpers live under `lib/`.
+Приложение следует структуре reference-проекта `api-service` для обработки
+запросов: controller -> form -> dry-validation contract -> domain service ->
+serializer. Общие callable helpers находятся в `lib/`.
 
-## Assumptions
+## Допущения
 
-- Authentication and per-user authorization are out of scope for the first version unless added later.
-- The primary actors are doctors and administrators using the tracker through an API client.
-- Supported task statuses for the first version are `pending`, `completed`, and `canceled`.
-- The public API exposes task instances through `/api/v1/tasks`; `TaskTemplate` is an internal persistence and recurrence mechanism.
-- Public task IDs use the `tpl_<task_template_id>_<occurrence_date>` format and work for both virtual and materialized occurrences.
-- One-time templates create one physical `Task` immediately.
-- Recurring templates generate virtual task instances for bounded date windows and materialize physical `Task` rows only when a specific instance changes or must be persisted.
-- Recurring task creation accepts omitted `status` or `status: pending`; `completed` and `canceled` are rejected at creation so the first occurrence is not materialized implicitly.
-- Canceling an occurrence keeps it visible with `status: canceled`; deleting an occurrence hides it from normal lists and suppresses virtual fallback.
-- Date filters are inclusive.
-- Recurring task list requests require a bounded date window; if a safe default is used, it must be documented.
-- Monthly recurrence for a missing calendar day skips that month instead of moving to the last day.
-- Recurring series deletion closes the internal template through `end_date = Date.current`; because `end_date` is inclusive, past and today's occurrences remain valid while future occurrences stop.
+- Аутентификация и per-user авторизация не входят в первую версию, если не будут добавлены отдельно.
+- Основные пользователи API - врачи и администраторы, работающие с трекером через API-клиент.
+- Поддерживаемые статусы задач в первой версии: `pending`, `completed`, `canceled`.
+- Публичное API показывает экземпляры задач через `/api/v1/tasks`; `TaskTemplate` остается внутренним механизмом хранения и повторяемости.
+- Публичные ID задач используют формат `tpl_<task_template_id>_<occurrence_date>` и работают как для виртуальных, так и для материализованных экземпляров.
+- Одноразовые шаблоны сразу создают одну физическую запись `Task`.
+- Повторяющиеся шаблоны генерируют виртуальные экземпляры задач для ограниченных временных окон и материализуют физические строки `Task` только при изменении конкретного экземпляра или необходимости сохранить его состояние.
+- При создании повторяющейся задачи допускается отсутствующий `status` или `status: pending`; `completed` и `canceled` отклоняются, чтобы не материализовать первый экземпляр неявно.
+- Отмена экземпляра оставляет его видимым со статусом `canceled`; удаление экземпляра скрывает его из обычных списков и подавляет виртуальный fallback.
+- Фильтры по датам включают обе границы.
+- Для получения списка повторяющихся задач требуется ограниченное временное окно; если используется безопасное значение по умолчанию, оно должно быть задокументировано.
+- Ежемесячное повторение для отсутствующего календарного дня пропускает такой месяц, а не переносится на последний день месяца.
+- Удаление повторяющейся серии закрывает внутренний шаблон через `end_date = Date.current`; поскольку `end_date` включительная, прошлые экземпляры и экземпляр за сегодняшний день остаются валидными, а будущие прекращаются.
