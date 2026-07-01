@@ -1,6 +1,6 @@
 # Feature Specification: Task Tracker API
 
-**Feature Branch**: `001-task-tracker-api` (no Git repository initialized)
+**Feature Branch**: `main` (local Git repository initialized)
 
 **Created**: 2026-06-30
 

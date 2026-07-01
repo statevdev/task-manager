@@ -1,6 +1,6 @@
 # Implementation Plan: Task Tracker API
 
-**Branch**: `(none; Git repository not initialized)` | **Date**: 2026-06-30 | **Spec**: [spec.md](spec.md)
+**Branch**: `main` (local Git repository initialized) | **Date**: 2026-06-30 | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `/specs/001-task-tracker-api/spec.md`
 
