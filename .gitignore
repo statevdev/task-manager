@@ -1,0 +1,16 @@
+/.bundle
+/.env
+/.env*
+!/.env.example
+/.kamal/secrets
+/.ruby-lsp
+/.uv
+/vendor/spec-kit
+/config/master.key
+/log/*
+!/log/.keep
+/storage/*
+!/storage/.keep
+/tmp/*
+!/tmp/.keep
+/vendor/bundle

@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: task_manager_development
+      POSTGRES_USER: task_manager
+      POSTGRES_PASSWORD: task_manager_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  web:
+    image: ruby:3.4.3
+    working_dir: /app
+    depends_on:
+      - db
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: task_manager
+      DATABASE_PASSWORD: task_manager_password
+      BUNDLE_PATH: vendor/bundle
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - bundle_data:/app/vendor/bundle
+    command: >
+      bash -lc "apt-get update &&
+      apt-get install -y --no-install-recommends libpq-dev &&
+      bundle install &&
+      bin/rails db:prepare &&
+      bin/rails db:seed &&
+      bin/rails server -b 0.0.0.0"
+
+volumes:
+  postgres_data:
+  bundle_data:
