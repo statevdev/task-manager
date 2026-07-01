@@ -1,0 +1,510 @@
+openapi: 3.0.3
+info:
+  title: Task Manager API
+  version: 0.5.0
+  description: Public task API for medical staff task tracking. Recurrence templates are internal; clients work with task instances through stable public IDs.
+servers:
+  - url: http://localhost:3000
+paths:
+  /api/v1/tasks:
+    get:
+      summary: List task instances
+      description: Returns one-time tasks, materialized recurring occurrences, and virtual recurring occurrences for a bounded date window. Deleted occurrences are hidden.
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Inclusive start date for the bounded listing window.
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Inclusive end date for the bounded listing window. Maximum window size is 366 days.
+        - name: status[]
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/TaskStatus"
+          style: form
+          explode: true
+        - name: tag_ids[]
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: integer
+          style: form
+          explode: true
+      responses:
+        "200":
+          description: Task instances matching filters
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TaskListItem"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    post:
+      summary: Create a task
+      description: Creates an internal TaskTemplate. One-time tasks also create a physical Task immediately; recurring tasks return the first visible instance for the provided due_date without pre-creating future tasks.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskCreateRequest"
+      responses:
+        "201":
+          description: Created task instance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  /api/v1/tasks/{id}:
+    get:
+      summary: Retrieve one task instance
+      description: Retrieves a physical task if it exists, otherwise returns the virtual occurrence if the internal template can generate it. Discarded occurrences return 404.
+      parameters:
+        - $ref: "#/components/parameters/PublicTaskId"
+      responses:
+        "200":
+          description: Task instance details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      summary: Update one task instance
+      description: Updates a physical task, or materializes a virtual occurrence and applies the requested changes.
+      parameters:
+        - $ref: "#/components/parameters/PublicTaskId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdateRequest"
+      responses:
+        "200":
+          description: Updated task instance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    delete:
+      summary: Delete one task instance
+      description: Discards an existing physical task, or creates and discards a suppression marker for a virtual occurrence. The occurrence is hidden from normal lists.
+      parameters:
+        - $ref: "#/components/parameters/PublicTaskId"
+      responses:
+        "204":
+          description: Task occurrence deleted from normal lists
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/tasks/{id}/tags:
+    post:
+      summary: Add tags to a task series
+      description: Adds tags to the internal template behind this task. For recurring tasks, tag changes are prospective and do not rewrite historical virtual occurrences.
+      parameters:
+        - $ref: "#/components/parameters/PublicTaskId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tag_ids]
+              properties:
+                tag_ids:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        "200":
+          description: Updated task instance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  /api/v1/tasks/{id}/tags/{tag_id}:
+    delete:
+      summary: Remove one tag from a task series
+      description: Removes a tag assignment from the internal template behind this task. For recurring tasks, tag changes are prospective.
+      parameters:
+        - $ref: "#/components/parameters/PublicTaskId"
+        - name: tag_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated task instance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/tasks/{id}/series:
+    delete:
+      summary: Close the recurring series behind a task
+      description: Sets the internal template end_date to the current date. Because end_date is inclusive, past and today's occurrences remain valid while future occurrences stop.
+      parameters:
+        - $ref: "#/components/parameters/PublicTaskId"
+      responses:
+        "200":
+          description: Current task instance after series closure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/tags:
+    get:
+      summary: List tags
+      responses:
+        "200":
+          description: Available tags
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Tag"
+    post:
+      summary: Create a tag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        "201":
+          description: Created tag
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagResponse"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  /api/v1/tags/{id}:
+    patch:
+      summary: Update an unprotected tag
+      parameters:
+        - $ref: "#/components/parameters/TagId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        "200":
+          description: Updated tag
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagResponse"
+        "403":
+          description: Protected tags cannot be modified
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+    delete:
+      summary: Delete an unprotected tag
+      parameters:
+        - $ref: "#/components/parameters/TagId"
+      responses:
+        "204":
+          description: Tag deleted
+        "403":
+          description: Protected tags cannot be deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+components:
+  parameters:
+    PublicTaskId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^tpl_[0-9]+_[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+      example: tpl_12_2026-07-01
+    TagId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    TaskStatus:
+      type: string
+      enum: [pending, completed, canceled]
+    RecurrenceType:
+      type: string
+      enum: [daily, monthly, specific_dates, day_parity]
+    DayParity:
+      type: string
+      enum: [even, odd]
+    MaterializationReason:
+      type: string
+      enum: [once, status_change, move, edit, delete, manual]
+    TaskCreateRequest:
+      type: object
+      required: [title, due_date]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        due_date:
+          type: string
+          format: date
+          description: Date for a one-time task, or first visible date/start date for a recurring task.
+        status:
+          allOf:
+            - $ref: "#/components/schemas/TaskStatus"
+          description: For recurring task creation, only pending or omission is accepted. Non-pending statuses are rejected to avoid implicit first-occurrence materialization.
+        tag_ids:
+          type: array
+          items:
+            type: integer
+        recurrence:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/RecurrenceCreate"
+    RecurrenceCreate:
+      type: object
+      required: [type]
+      properties:
+        type:
+          $ref: "#/components/schemas/RecurrenceType"
+        interval:
+          type: integer
+          minimum: 1
+          description: Required for daily recurrence.
+        end_date:
+          type: string
+          format: date
+        day_of_month:
+          type: integer
+          minimum: 1
+          maximum: 31
+          description: Required for monthly recurrence.
+        specific_dates:
+          type: array
+          items:
+            type: string
+            format: date
+          description: Required for specific_dates recurrence.
+        day_parity:
+          $ref: "#/components/schemas/DayParity"
+    TaskUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        due_date:
+          type: string
+          format: date
+          description: Moving one occurrence changes actual due_date while keeping the original occurrence date in the public ID.
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        tag_ids:
+          type: array
+          items:
+            type: integer
+          description: Replaces tags for the task series. For recurring tasks, this is prospective.
+        recurrence:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/RecurrenceUpdate"
+        effective_date:
+          type: string
+          format: date
+          description: Optional request-only date from which recurring series changes take effect. Not stored as a database field.
+    RecurrenceUpdate:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/RecurrenceType"
+        interval:
+          type: integer
+          minimum: 1
+        end_date:
+          type: string
+          format: date
+        day_of_month:
+          type: integer
+          minimum: 1
+          maximum: 31
+        specific_dates:
+          type: array
+          items:
+            type: string
+            format: date
+        day_parity:
+          $ref: "#/components/schemas/DayParity"
+    TaskResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/Task"
+    RecurrenceDetails:
+      type: object
+      required: [type]
+      properties:
+        type:
+          $ref: "#/components/schemas/RecurrenceType"
+        interval:
+          type: integer
+          nullable: true
+          minimum: 1
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        day_of_month:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 31
+        specific_dates:
+          type: array
+          items:
+            type: string
+            format: date
+        day_parity:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/DayParity"
+    TaskListItem:
+      type: object
+      required:
+        - id
+        - title
+        - occurrence_date
+        - due_date
+        - status
+        - recurrence_type
+        - tags
+      properties:
+        id:
+          type: string
+          pattern: "^tpl_[0-9]+_[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          example: tpl_12_2026-07-01
+        title:
+          type: string
+        description:
+          type: string
+        occurrence_date:
+          type: string
+          format: date
+          description: Original date generated by the internal template.
+        due_date:
+          type: string
+          format: date
+          description: Actual execution date; differs from occurrence_date when moved.
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        recurrence_type:
+          type: string
+          enum: [once, daily, monthly, specific_dates, day_parity]
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+    Task:
+      allOf:
+        - $ref: "#/components/schemas/TaskListItem"
+        - type: object
+          required: [recurrence]
+          properties:
+            recurrence:
+              nullable: true
+              description: Recurrence settings for the series; null for one-time tasks.
+              allOf:
+                - $ref: "#/components/schemas/RecurrenceDetails"
+    TagResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/Tag"
+    Tag:
+      type: object
+      required: [id, name, protected]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        protected:
+          type: boolean
+    ErrorResponse:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: array
+          items:
+            type: string
