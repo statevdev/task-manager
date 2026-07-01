@@ -1,0 +1,8 @@
+en:
+  dry_validation:
+    errors:
+      record_exists?: "does not exist"
+      public_task_id?: "must use tpl_<template_id>_<occurrence_date> format"
+      bounded_date_window?: "must be no longer than 366 days"
+      date_order?: "must be on or after from date"
+      protected_tag?: "is protected and cannot be changed"
