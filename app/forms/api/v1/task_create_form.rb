@@ -13,7 +13,7 @@ module Api
           template = TaskTemplate.create!(template_attributes(attributes))
           template.tag_ids = attributes[:tag_ids] if attributes[:tag_ids].present?
 
-          assign_result(attributes[:recurrence].present? ? virtual_instance(template, attributes.fetch(:due_date)) : create_once_task(template, attributes))
+          assign_result(attributes[:recurrence].present? ? virtual_instance(template) : create_once_task(template, attributes))
         end
 
         self
@@ -61,8 +61,20 @@ module Api
         )
       end
 
-      def virtual_instance(template, due_date)
-        TaskInstance.new(task_template: template, occurrence_date: due_date)
+      def virtual_instance(template)
+        TaskInstance.new(task_template: template, occurrence_date: first_occurrence_date(template))
+      end
+
+      def first_occurrence_date(template)
+        Recurrence::FirstOccurrenceDate.call(
+          start_date: template.start_date,
+          recurrence_type: template.recurrence_type,
+          end_date: template.end_date,
+          interval: template.interval,
+          day_of_month: template.day_of_month,
+          specific_dates: template.specific_dates,
+          day_parity: template.day_parity
+        )
       end
     end
   end

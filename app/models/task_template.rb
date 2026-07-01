@@ -45,12 +45,24 @@ class TaskTemplate < ApplicationRecord
       errors.add(:day_parity, "must be blank") if day_parity.present?
     when "daily"
       errors.add(:interval, "must be greater than 0") unless interval.to_i.positive?
+      errors.add(:day_of_month, "must be blank") if day_of_month.present?
+      errors.add(:specific_dates, "must be blank") if specific_dates.present?
+      errors.add(:day_parity, "must be blank") if day_parity.present?
     when "monthly"
       errors.add(:day_of_month, "must be between 1 and 31") unless day_of_month.to_i.between?(1, 31)
+      errors.add(:interval, "must be blank") if interval.present?
+      errors.add(:specific_dates, "must be blank") if specific_dates.present?
+      errors.add(:day_parity, "must be blank") if day_parity.present?
     when "specific_dates"
       errors.add(:specific_dates, "must include at least one date") if specific_dates.blank?
+      errors.add(:interval, "must be blank") if interval.present?
+      errors.add(:day_of_month, "must be blank") if day_of_month.present?
+      errors.add(:day_parity, "must be blank") if day_parity.present?
     when "day_parity"
       errors.add(:day_parity, "must be even or odd") if day_parity.blank?
+      errors.add(:interval, "must be blank") if interval.present?
+      errors.add(:day_of_month, "must be blank") if day_of_month.present?
+      errors.add(:specific_dates, "must be blank") if specific_dates.present?
     end
   end
 

@@ -32,11 +32,21 @@ module Api
       end
 
       rule(:recurrence) do
+        if values.key?(:recurrence) && value.blank?
+          key.failure("must include at least one field")
+          next
+        end
+
         next if value.blank?
 
         type = value[:type]
         if type.present? && TaskTemplate::RECURRENCE_TYPES.except(:once).value?(type) == false
           key([ :recurrence, :type ]).failure("must be daily, monthly, specific_dates, or day_parity")
+        end
+        if TaskTemplate::RECURRENCE_TYPES.except(:once).value?(type)
+          irrelevant_recurrence_keys(type, value).each do |key_name|
+            key([ :recurrence, key_name ]).failure("must be blank for #{type} recurrence")
+          end
         end
 
         key([ :recurrence, :interval ]).failure("must be greater than 0") if value.key?(:interval) && !value[:interval].to_i.positive?
@@ -46,13 +56,27 @@ module Api
       end
 
       rule do
-        key(:base).failure("must include at least one field") if values.except(:tag_ids).empty? && !values.key?(:tag_ids)
+        meaningful_values = values.except(:effective_date)
+        meaningful_values = meaningful_values.except(:recurrence) if meaningful_values[:recurrence].blank?
+
+        key(:base).failure("must include at least one field") if meaningful_values.except(:tag_ids).empty? && !meaningful_values.key?(:tag_ids)
       end
 
       private
 
       def duplicate_dates?(dates)
         dates.present? && dates.uniq.size != dates.size
+      end
+
+      def irrelevant_recurrence_keys(type, recurrence)
+        allowed_keys = {
+          "daily" => %i[type interval end_date],
+          "monthly" => %i[type day_of_month end_date],
+          "specific_dates" => %i[type specific_dates end_date],
+          "day_parity" => %i[type day_parity end_date]
+        }.fetch(type)
+
+        recurrence.keys.select { |key_name| allowed_keys.exclude?(key_name) && recurrence[key_name].present? }
       end
     end
   end

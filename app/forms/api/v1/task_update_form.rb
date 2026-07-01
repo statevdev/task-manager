@@ -22,14 +22,18 @@ module Api
         task = Task.find_by(task_template_id: parsed.task_template_id, occurrence_date: parsed.occurrence_date)
         template = task&.task_template || TaskTemplate.find_by(id: parsed.task_template_id)
         return not_found unless template
-        return revise_template(template, parsed.occurrence_date, validation.to_h) if series_revision?(template, validation.to_h)
+
+        attributes = validation.to_h
+        return reject_once_series_fields(attributes) if once_series_fields?(template, attributes)
+        return revise_template(template, parsed.occurrence_date, attributes) if series_revision?(template, attributes)
 
         return not_found if task&.discarded? && params[:status].blank?
-        return materialize(parsed, validation.to_h) unless task&.kept?
+        return materialize(parsed, attributes) unless task&.kept?
 
-        update_attributes = validation.to_h.slice(:title, :description, :due_date, :status)
+        update_attributes = attributes.slice(:title, :description, :due_date, :status)
         task.update!(update_attributes) if update_attributes.present?
         task.task_template.update!(update_attributes.slice(:title, :description, :due_date).transform_keys(due_date: :start_date)) if update_template?(task, update_attributes)
+        task.task_template.update!(tag_ids: attributes[:tag_ids]) if update_once_tags?(task, attributes)
 
         assign_result(task)
         self
@@ -42,6 +46,18 @@ module Api
 
       def series_revision?(template, attributes)
         !template.once? && attributes.keys.intersect?(%i[recurrence tag_ids effective_date])
+      end
+
+      def once_series_fields?(template, attributes)
+        template.once? && attributes.keys.intersect?(%i[recurrence effective_date])
+      end
+
+      def reject_once_series_fields(attributes)
+        @error_status = :unprocessable_entity
+        @errors = {}
+        @errors[:recurrence] = [ "cannot be updated for one-time tasks" ] if attributes.key?(:recurrence)
+        @errors[:effective_date] = [ "cannot be used for one-time tasks" ] if attributes.key?(:effective_date)
+        self
       end
 
       def revise_template(template, occurrence_date, attributes)
@@ -107,6 +123,10 @@ module Api
 
       def update_template?(task, attributes)
         task.task_template.once? && attributes.keys.intersect?(%i[title description due_date])
+      end
+
+      def update_once_tags?(task, attributes)
+        task.task_template.once? && attributes.key?(:tag_ids)
       end
 
       def not_found

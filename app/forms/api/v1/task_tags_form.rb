@@ -33,7 +33,10 @@ module Api
         task = resolve_task
         return self unless task
 
-        tag_ids = task.task_template.tag_ids - [ params[:tag_id].to_i ]
+        tag_id = Integer(params[:tag_id], exception: false)
+        return tag_not_found unless tag_id && Tag.exists?(id: tag_id)
+
+        tag_ids = task.task_template.tag_ids - [ tag_id ]
         assign_result(apply_tag_ids(task, tag_ids))
       end
 
@@ -79,6 +82,12 @@ module Api
       def not_found
         @error_status = :not_found
         @errors = { id: [ "not found" ] }
+        nil
+      end
+
+      def tag_not_found
+        @error_status = :not_found
+        @errors = { tag_id: [ "not found" ] }
         nil
       end
     end

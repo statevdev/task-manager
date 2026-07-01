@@ -216,8 +216,9 @@ whether an instance is virtual or materialized. Clients do not use the database
 - `DELETE /tasks/:id`: discards an existing physical task, or creates and
   discards a suppression marker for an existing virtual occurrence.
 - `POST /tasks`: creates a `TaskTemplate` internally. One-time tasks also create
-  one physical `Task`; recurring tasks return the first visible instance for the
-  provided `due_date` without pre-creating future tasks. Recurring creation
+  one physical `Task`; recurring tasks treat `due_date` as the recurrence start
+  date and return the first generated instance on or after that date without
+  pre-creating future tasks. Recurring creation
   accepts omitted `status` or `status: pending`; non-pending statuses are
   rejected so creation does not implicitly materialize the first occurrence.
 

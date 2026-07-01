@@ -39,6 +39,10 @@ module Api
           next
         end
 
+        irrelevant_recurrence_keys(type, value).each do |key_name|
+          key([ :recurrence, key_name ]).failure("must be blank for #{type} recurrence")
+        end
+
         case type
         when "daily"
           key([ :recurrence, :interval ]).failure("is required") unless value[:interval].to_i.positive?
@@ -52,6 +56,7 @@ module Api
         end
 
         key([ :recurrence, :end_date ]).failure("must be on or after due_date") if value[:end_date].present? && values[:due_date].present? && value[:end_date] < values[:due_date]
+        key(:recurrence).failure("must generate at least one occurrence on or after due_date") if values[:due_date].present? && recurrence_generates_no_dates?(values[:due_date], value)
         key(:status).failure("must be pending or omitted for recurring tasks") if values[:status].present? && values[:status] != "pending"
       end
 
@@ -59,6 +64,29 @@ module Api
 
       def duplicate_dates?(dates)
         dates.present? && dates.uniq.size != dates.size
+      end
+
+      def irrelevant_recurrence_keys(type, recurrence)
+        allowed_keys = {
+          "daily" => %i[type interval end_date],
+          "monthly" => %i[type day_of_month end_date],
+          "specific_dates" => %i[type specific_dates end_date],
+          "day_parity" => %i[type day_parity end_date]
+        }.fetch(type)
+
+        recurrence.keys.select { |key_name| allowed_keys.exclude?(key_name) && recurrence[key_name].present? }
+      end
+
+      def recurrence_generates_no_dates?(due_date, recurrence)
+        Recurrence::FirstOccurrenceDate.call(
+          start_date: due_date,
+          recurrence_type: recurrence[:type],
+          end_date: recurrence[:end_date],
+          interval: recurrence[:interval],
+          day_of_month: recurrence[:day_of_month],
+          specific_dates: recurrence[:specific_dates],
+          day_parity: recurrence[:day_parity]
+        ).blank?
       end
     end
   end

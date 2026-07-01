@@ -60,7 +60,7 @@ paths:
           $ref: "#/components/responses/ValidationError"
     post:
       summary: Create a task
-      description: Creates an internal TaskTemplate. One-time tasks also create a physical Task immediately; recurring tasks return the first visible instance for the provided due_date without pre-creating future tasks.
+      description: Creates an internal TaskTemplate. One-time tasks also create a physical Task immediately; recurring tasks treat due_date as the recurrence start date and return the first generated instance on or after that date without pre-creating future tasks.
       requestBody:
         required: true
         content:
@@ -316,7 +316,7 @@ components:
         due_date:
           type: string
           format: date
-          description: Date for a one-time task, or first visible date/start date for a recurring task.
+          description: Date for a one-time task, or recurrence start date for a recurring task. Recurring task creation returns the first generated instance on or after this date.
         status:
           allOf:
             - $ref: "#/components/schemas/TaskStatus"

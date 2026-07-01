@@ -1120,3 +1120,49 @@
        `Feature Branch: main (local Git repository initialized)`;
      - `specs/001-task-tracker-api/plan.md` теперь указывает
        `Branch: main (local Git repository initialized)`.
+
+185. Ассистент начал QA-тестирование публичного API:
+     - проверил доступность локального Rails API на `localhost:3001`;
+     - выделил рисковые зоны: PATCH одноразовых задач, PATCH recurring-серий,
+       удаление связей с тегами, создание recurrence-правил с датой старта,
+       пустые/нерелевантные recurrence-параметры и правила без будущих
+       occurrences.
+
+186. В ходе QA ассистент добавил request-регрессии в
+     `spec/requests/api/v1/qa_edge_cases_spec.rb` и подтвердил найденные
+     несоответствия:
+     - PATCH одноразовой задачи с `tag_ids` не менял теги;
+     - PATCH одноразовой задачи с `recurrence` или `effective_date`
+       молча игнорировал series-only поля;
+     - PATCH recurring-задачи с пустым `recurrence` или только
+       `effective_date` мог создать successor template без реальных изменений;
+     - DELETE несуществующей связи с тегом возвращал успешный ответ;
+     - POST monthly/specific_dates/day_parity recurrence мог вернуть
+       ghost-instance на `due_date`, хотя правило эту дату не генерировало;
+     - recurrence payload мог содержать нерелевантные параметры для выбранного
+       типа правила.
+
+187. Ассистент исправил QA findings:
+     - добавил `Recurrence::FirstOccurrenceDate` для поиска первого реального
+       occurrence на дату старта правила или после нее;
+     - обновил create/update contracts, чтобы отклонять пустые и
+       нерелевантные recurrence-параметры;
+     - обновил create form, чтобы recurring create возвращал первый реально
+       сгенерированный instance;
+     - обновил update form, чтобы PATCH одноразовых задач применял `tag_ids` и
+       возвращал `422` для recurrence/effective_date;
+     - обновил tag removal form, чтобы несуществующий `tag_id` возвращал `404`;
+     - усилил model validation в `TaskTemplate`.
+
+188. Ассистент обновил документацию под QA-решения:
+     - `README.md`;
+     - `specs/001-task-tracker-api/data-model.md`;
+     - `specs/001-task-tracker-api/contracts/openapi.yaml`;
+     - `swagger/v1/openapi.yaml`;
+     - новый `specs/001-task-tracker-api/qa-report.md`.
+
+189. Ассистент проверил результат QA-исправлений:
+     - полный `bundle exec rspec`: 54 examples, 0 failures;
+     - `bundle exec rubocop`: 89 files inspected, no offenses detected;
+     - `bundle exec brakeman --no-pager`: 0 security warnings;
+     - YAML parse для OpenAPI, Docker Compose и GitHub Actions: успешно.
