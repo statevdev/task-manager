@@ -49,7 +49,7 @@ group :development, :test do
   gem "brakeman", require: false
 
   # RSpec test framework for request, model, form, contract, serializer, and service specs.
-  gem "rspec-rails", "~> 7.1"
+  gem "rspec-rails", "~> 8.0"
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
