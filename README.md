@@ -43,7 +43,6 @@ LLM сохранена в [HISTORY.md](HISTORY.md).
 Установите зависимости:
 
 ```bash
-bundle config set path vendor/bundle
 bundle install
 ```
 
@@ -99,16 +98,6 @@ Fallback для старого Compose:
 
 ```bash
 docker-compose up --build
-```
-
-## Проверки качества
-
-```bash
-bin/rails db:test:prepare
-bundle exec rspec
-bundle exec rubocop
-bundle exec brakeman --no-pager
-ruby -ryaml -e 'YAML.load_file("specs/001-task-tracker-api/contracts/openapi.yaml"); YAML.load_file("swagger/v1/openapi.yaml"); YAML.load_file("docker-compose.yml")'
 ```
 
 ## Документация API
