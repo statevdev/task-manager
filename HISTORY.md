@@ -1214,3 +1214,31 @@
      - RuboCop;
      - Brakeman;
      - YAML parse для OpenAPI и `docker-compose.yml`.
+
+197. Пользователь попросил сделать README подробнее:
+     - указать использованный стек;
+     - убрать env-переменные из команд запуска;
+     - убрать лишние заметки о внутренней технической реализации проекта.
+
+198. Ассистент обновил README и локальную конфигурацию БД:
+     - расширил описание стека: Ruby, Rails API, PostgreSQL, dry-validation,
+       discard, rswag/OpenAPI, RSpec, RuboCop, Brakeman, Docker Compose,
+       Spec Kit;
+     - добавил раздел возможностей и таблицу основных endpoint'ов;
+     - заменил inline `DATABASE_*` и `BUNDLE_PATH` в командах на обычные
+       команды `bundle config`, `bundle install`, `docker compose up -d db`,
+       `bin/rails ...`;
+     - удалил из README заметки про внутренний pipeline
+       `controller -> form -> contract -> service -> serializer`;
+     - добавил локальные defaults для development/test в
+       `config/database.yml`, согласованные с `docker-compose.yml`.
+
+199. Ассистент проверил обновленные инструкции и проект:
+     - `bin/rails db:test:prepare` без `DATABASE_*`: успешно;
+     - `bundle exec rspec` без `DATABASE_*`: 54 examples, 0 failures;
+     - `bundle exec brakeman --no-pager`: 0 security warnings;
+     - YAML parse для OpenAPI и `docker-compose.yml`: успешно;
+     - первый `bundle exec rubocop` упал только из-за read-only
+       `~/.cache/rubocop_cache` в sandbox;
+     - повторный `RUBOCOP_CACHE_ROOT=/tmp/rubocop-cache bundle exec rubocop`:
+       89 files inspected, no offenses detected.

@@ -27,6 +27,9 @@ default: &default
 development:
   <<: *default
   database: <%= ENV.fetch("DATABASE_NAME", "task_manager_development") %>
+  host: <%= ENV.fetch("DATABASE_HOST", "localhost") %>
+  username: <%= ENV.fetch("DATABASE_USERNAME", "task_manager") %>
+  password: <%= ENV.fetch("DATABASE_PASSWORD", "task_manager_password") %>
 
   # The specified database role being used to connect to PostgreSQL.
   # To create additional roles in PostgreSQL see `$ createuser --help`.
@@ -61,6 +64,9 @@ development:
 test:
   <<: *default
   database: <%= ENV.fetch("DATABASE_NAME", "task_manager_test") %>
+  host: <%= ENV.fetch("DATABASE_HOST", "localhost") %>
+  username: <%= ENV.fetch("DATABASE_USERNAME", "task_manager") %>
+  password: <%= ENV.fetch("DATABASE_PASSWORD", "task_manager_password") %>
 
 # As with config/credentials.yml, you never want to store sensitive information,
 # like your database password, in your source code. If your source code is
