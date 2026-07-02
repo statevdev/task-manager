@@ -1166,3 +1166,31 @@
      - `bundle exec rubocop`: 89 files inspected, no offenses detected;
      - `bundle exec brakeman --no-pager`: 0 security warnings;
      - YAML parse для OpenAPI, Docker Compose и GitHub Actions: успешно.
+
+190. Пользователь попросил отменить все незакоммиченные изменения после
+     экспериментального рефакторинга и начать подготовку проекта к сдаче.
+
+191. Ассистент откатил незакоммиченные изменения:
+     - `git restore --staged --worktree .` вернул tracked-файлы к последнему
+       коммиту `5c5dd9c`;
+     - `git clean -f -- .rspec_status` удалил generated-файл от RSpec;
+     - после отката `git status --short` был чистым.
+
+192. Ассистент начал подготовку проекта к сдаче:
+     - убрал scaffold-комментарии про SQLite из `.dockerignore` и
+       `config/deploy.yml`;
+     - закрепил `postgres:16` в GitHub Actions CI;
+     - убрал неиспользуемые scaffold-комментарии из `config/routes.rb`;
+     - проверил, что `swagger/v1/openapi.yaml` совпадает с
+       `specs/001-task-tracker-api/contracts/openapi.yaml`.
+
+193. Ассистент прогнал delivery checks:
+     - поиск `sqlite`, `TODO`, `FIXME`, `HACK`, `rails test`, `TBD` по
+       delivery-файлам: совпадений не найдено;
+     - YAML parse для OpenAPI, `docker-compose.yml`, `.github/workflows/ci.yml`
+       и `config/deploy.yml`: успешно;
+     - `bundle exec rubocop`: 89 files inspected, no offenses detected;
+     - `bundle exec brakeman --no-pager`: 0 security warnings;
+     - полный `bundle exec rspec`: 54 examples, 0 failures;
+     - `docker compose config` недоступен в окружении, но fallback
+       `docker-compose config` успешно разобрал Compose-файл.
