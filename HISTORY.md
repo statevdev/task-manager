@@ -1194,3 +1194,23 @@
      - полный `bundle exec rspec`: 54 examples, 0 failures;
      - `docker compose config` недоступен в окружении, но fallback
        `docker-compose config` успешно разобрал Compose-файл.
+
+194. Пользователь попросил перейти к следующему шагу подготовки к сдаче.
+
+195. Ассистент выполнил финальный delivery checklist:
+     - обязательные файлы `README.md`, `HISTORY.md`, `SPECS.md`,
+       `docker-compose.yml`, `Dockerfile`, `Gemfile`, `Gemfile.lock`,
+       `swagger/v1/openapi.yaml` и
+       `specs/001-task-tracker-api/contracts/openapi.yaml` tracked в git;
+     - локальные секреты и кэши `.env`, `config/master.key`, `.uv`,
+       `.ruby-lsp`, `.kamal/secrets`, логи, `tmp/` и `vendor/` не tracked;
+     - `.ruby-version` фиксирует Ruby `3.4.3`;
+     - `specs/001-task-tracker-api/tasks.md` отмечает все задачи как
+       выполненные;
+     - `swagger/v1/openapi.yaml` и feature OpenAPI contract совпадают.
+
+196. Ассистент добавил в `README.md` раздел `Проверки качества` с командами:
+     - RSpec с локальными PostgreSQL env-переменными;
+     - RuboCop;
+     - Brakeman;
+     - YAML parse для OpenAPI и `docker-compose.yml`.

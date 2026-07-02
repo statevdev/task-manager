@@ -68,6 +68,21 @@ BUNDLE_PATH=vendor/bundle \
 bundle exec rspec
 ```
 
+## Проверки качества
+
+Перед сдачей использовались следующие проверки:
+
+```bash
+DATABASE_HOST=localhost \
+DATABASE_USERNAME=task_manager \
+DATABASE_PASSWORD=task_manager_password \
+BUNDLE_PATH=vendor/bundle \
+bundle exec rspec
+bundle exec rubocop
+bundle exec brakeman --no-pager
+ruby -ryaml -e 'YAML.load_file("specs/001-task-tracker-api/contracts/openapi.yaml"); YAML.load_file("swagger/v1/openapi.yaml"); YAML.load_file("docker-compose.yml")'
+```
+
 ## Запуск через Docker
 
 Для быстрого проверочного запуска Rails и PostgreSQL вместе:
